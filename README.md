@@ -1,5 +1,7 @@
 # Servidor NFS em Docker com Limite de Espaço (2 GB)
 
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-hebertribeiro31%2Fnfs--server-blue?logo=docker)](https://hub.docker.com/r/hebertribeiro31/nfs-server)
+
 Este projeto cria um servidor NFS rodando em container Docker baseado em Alpine Linux, exportando um diretório com limite rígido de 2 GB usando um arquivo-disco (`nfs.img`).  
 Além disso, inclui um cliente NFS (container Alpine) para testes automáticos.
 
@@ -36,6 +38,8 @@ docker-fs/
 
 #### Dockerfile
 
+---
+
 ## 🚀 Como usar
 
 ### 1. Criar rede Docker (se não existir)
@@ -51,7 +55,7 @@ mkdir -p ./nfs-data
 touch ./nfs-data/nfs.img
 ```
 
-### 3. Build e subir os containers
+### 3. Build e subir os containers (modo local)
 
 ```bash
 docker compose up -d --build
@@ -102,6 +106,49 @@ Quando atingir 2 GB:
 ```
 dd: writing to 'bigfile': No space left on device
 ```
+
+---
+
+## 🐳 Usando a imagem publicada no Docker Hub
+
+Se você não quiser buildar localmente, pode usar diretamente a imagem já disponível:
+
+```
+image: hebertribeiro31/nfs-server:latest
+```
+
+Exemplo no `docker-compose.yml`:
+
+```yaml
+services:
+  nfs-server:
+    image: hebertribeiro31/nfs-server:latest
+    container_name: nfs-server
+    restart: unless-stopped
+    privileged: true
+    networks:
+      docker-fs-net:
+        ipv4_address: 172.25.0.50
+    volumes:
+      - ./nfs-data/nfs.img:/nfs.img
+
+  nfs-client:
+    image: alpine:3.20
+    container_name: nfs-client
+    command: sh -c "apk add --no-cache nfs-utils && mkdir -p /mnt/test && mount -t nfs -o vers=3,nolock 172.25.0.50:/exports/app /mnt/test && tail -f /dev/null"
+    privileged: true
+    depends_on:
+      - nfs-server
+    networks:
+      docker-fs-net:
+        ipv4_address: 172.25.0.60
+
+networks:
+  docker-fs-net:
+    external: true
+```
+
+📌 Dessa forma, o Docker vai puxar a imagem `hebertribeiro31/nfs-server:latest` direto do Docker Hub, sem necessidade de build local.
 
 ---
 
