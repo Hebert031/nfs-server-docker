@@ -1,0 +1,15 @@
+services:
+  nfs-server:
+    build: .
+    container_name: nfs-server
+    restart: unless-stopped
+    privileged: true
+    networks:
+      docker-fs-net:
+        ipv4_address: 172.25.0.50
+    volumes:
+      - ./nfs-data/nfs.img:/nfs.img   # arquivo persistente para limitar espaço
+
+networks:
+  docker-fs-net:
+    external: true
